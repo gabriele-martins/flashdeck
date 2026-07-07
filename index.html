@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#EEF1F6">
+<title>FlashDeck — Repetição espaçada</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
+:root{
+  --bg:#EEF1F6; --surface:#FFFFFF; --ink:#12141F; --muted:#6B7285;
+  --line:#DDE2EC; --accent:#4338CA; --accent-soft:#EEF0FF;
+  --again:#DC2626; --hard:#D97706; --good:#16A34A; --easy:#2563EB;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{min-height:100vh;background:var(--bg);color:var(--ink);
+  font-family:'Inter',system-ui,sans-serif;font-size:15px;line-height:1.5;
+  -webkit-tap-highlight-color:transparent}
+.fd-wrap{max-width:640px;margin:0 auto;padding:16px 16px 96px}
+.fd-display{font-family:'Space Grotesk',sans-serif}
+.fd-header{display:flex;align-items:center;gap:12px;padding:8px 0 16px;flex-wrap:wrap}
+.fd-header h1{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;letter-spacing:-.5px}
+.fd-back{background:none;border:none;font-size:15px;color:var(--accent);cursor:pointer;
+  font-weight:600;padding:8px 8px 8px 0;font-family:inherit}
+.fd-card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px}
+.fd-deck-row{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  background:var(--surface);border:1px solid var(--line);border-radius:16px;
+  padding:16px;margin-bottom:10px;cursor:pointer;transition:border-color .15s}
+.fd-deck-row:hover{border-color:var(--accent)}
+.fd-deck-name{font-weight:600;font-size:16px}
+.fd-counts{display:flex;gap:10px;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;flex-wrap:wrap}
+.fd-count-due{color:var(--good)} .fd-count-new{color:var(--easy)} .fd-count-total{color:var(--muted)}
+.fd-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  background:var(--accent);color:#fff;border:none;border-radius:12px;
+  padding:12px 18px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;min-height:44px}
+.fd-btn:disabled{opacity:.4;cursor:default}
+.fd-btn.ghost{background:var(--accent-soft);color:var(--accent)}
+.fd-btn.danger{background:#FEE2E2;color:var(--again)}
+.fd-btn.full{width:100%}
+.fd-input,.fd-textarea{width:100%;border:1px solid var(--line);border-radius:12px;
+  padding:12px;font-size:16px;font-family:inherit;background:var(--surface);color:var(--ink);outline:none}
+.fd-input:focus,.fd-textarea:focus{border-color:var(--accent)}
+.fd-textarea{min-height:80px;resize:vertical}
+.fd-label{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;
+  letter-spacing:.06em;margin:14px 0 6px;display:block}
+.fd-study-card{background:var(--surface);border:1px solid var(--line);border-radius:20px;
+  min-height:300px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:32px 24px;text-align:center;cursor:pointer;gap:20px}
+.fd-study-text{font-size:22px;font-weight:600;font-family:'Space Grotesk',sans-serif;
+  white-space:pre-wrap;word-break:break-word}
+.fd-study-answer{font-size:18px;font-weight:400;white-space:pre-wrap;word-break:break-word}
+.fd-divider{width:48px;height:3px;border-radius:2px;background:var(--accent)}
+.fd-ratings{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:16px}
+.fd-rating{border:none;border-radius:12px;padding:10px 4px;cursor:pointer;color:#fff;
+  display:flex;flex-direction:column;align-items:center;gap:2px;font-family:inherit;min-height:56px}
+.fd-rating b{font-size:14px;font-weight:600}
+.fd-rating span{font-size:11px;opacity:.9;font-family:'Space Grotesk',sans-serif}
+.fd-progress{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;
+  color:var(--muted);text-align:center;margin-bottom:12px}
+.fd-item{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;
+  padding:12px 0;border-bottom:1px solid var(--line)}
+.fd-item:last-child{border-bottom:none}
+.fd-item-front{font-weight:600;font-size:14px}
+.fd-item-back{font-size:13px;color:var(--muted);margin-top:2px}
+.fd-mini{background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;
+  font-weight:600;padding:6px;font-family:inherit}
+.fd-mini.del{color:var(--again)}
+.fd-empty{text-align:center;color:var(--muted);padding:40px 16px}
+.fd-toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+  background:var(--ink);color:#fff;padding:10px 18px;border-radius:12px;font-size:14px;
+  font-weight:500;z-index:50;max-width:90vw;text-align:center}
+.fd-hint{font-size:13px;color:var(--muted);margin-top:8px}
+.fd-code{background:var(--bg);border-radius:8px;padding:10px;font-size:12px;
+  font-family:monospace;white-space:pre-wrap;margin-top:8px;border:1px solid var(--line);overflow-x:auto}
+.fd-row-btns{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.fd-sync{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;
+  font-family:'Space Grotesk',sans-serif}
+.fd-sync .dot{width:8px;height:8px;border-radius:50%}
+.fd-sync.local{color:var(--muted)} .fd-sync.local .dot{background:var(--muted)}
+.fd-sync.syncing{color:var(--hard)} .fd-sync.syncing .dot{background:var(--hard)}
+.fd-sync.synced{color:var(--good)} .fd-sync.synced .dot{background:var(--good)}
+.fd-sync.error{color:var(--again)} .fd-sync.error .dot{background:var(--again)}
+.fd-banner{background:#FFF7E6;border:1px solid #F1D9A6;border-radius:16px;padding:14px 16px;
+  font-size:14px;margin-bottom:14px}
+.fd-banner code{background:#fff;border-radius:6px;padding:1px 6px;font-size:12px}
+@media (min-width:600px){.fd-study-text{font-size:26px}}
+</style>
+</head>
+<body>
+<div class="fd-wrap" id="app"></div>
+<div id="toast-slot"></div>
+
+<script>
+/* ============================================================
+   CONFIGURAÇÃO — a única coisa que você precisa editar.
+   Crie um OAuth Client ID (tipo "Aplicativo da Web") no Google
+   Cloud Console e cole abaixo. Passo a passo no README.md.
+   O Client ID é público por natureza; não é segredo.
+   ============================================================ */
+const GOOGLE_CLIENT_ID = "COLE_SEU_CLIENT_ID_AQUI.apps.googleusercontent.com";
+const DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.appdata";
+const DRIVE_FILE = "flashdeck-data.json";
+const LOCAL_KEY = "flashdeck-data-v1";
+const DAY = 24 * 60 * 60 * 1000;
+
+const isConfigured = () => !GOOGLE_CLIENT_ID.startsWith("COLE_SEU");
+
+/* ============================================================
+   ESTADO
+   ============================================================ */
+let state = {
+  data: { decks: [], cards: [], updatedAt: 0 },
+  view: { name: "home" },
+  study: null,                 // {queue:[ids], done, flipped}
+  editingId: null,
+  showImport: false,
+  sync: "local",               // local | syncing | synced | error
+  loggedIn: false,
+};
+let accessToken = null;
+let tokenExpiry = 0;
+let tokenClient = null;
+let driveFileId = null;
+let saveTimer = null;
+
+/* ============================================================
+   PERSISTÊNCIA LOCAL (cache offline)
+   ============================================================ */
+function loadLocal() {
+  try {
+    const raw = localStorage.getItem(LOCAL_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (e) {}
+  return { decks: [], cards: [], updatedAt: 0 };
+}
+function saveLocal(data) {
+  try { localStorage.setItem(LOCAL_KEY, JSON.stringify(data)); } catch (e) {}
+}
+
+/* ============================================================
+   GOOGLE LOGIN (Google Identity Services)
+   ============================================================ */
+function gisLoaded() {
+  if (!isConfigured()) return;
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: GOOGLE_CLIENT_ID,
+    scope: DRIVE_SCOPE,
+    callback: () => {},
+  });
+  // Se já logou antes, tenta renovar em silêncio
+  if (localStorage.getItem("flashdeck-logged") === "1") {
+    requestToken("").then(onLoggedIn).catch(() => {});
+  }
+}
+
+function requestToken(prompt) {
+  return new Promise((resolve, reject) => {
+    if (!tokenClient) return reject(new Error("GIS não carregou"));
+    tokenClient.callback = (resp) => {
+      if (resp.error) return reject(resp);
+      accessToken = resp.access_token;
+      tokenExpiry = Date.now() + (resp.expires_in - 60) * 1000;
+      resolve(accessToken);
+    };
+    tokenClient.error_callback = (err) => reject(err);
+    tokenClient.requestAccessToken({ prompt });
+  });
+}
+
+async function getToken() {
+  if (accessToken && Date.now() < tokenExpiry) return accessToken;
+  return requestToken(""); // renovação silenciosa
+}
+
+async function login() {
+  if (!isConfigured()) {
+    toast("Configure o GOOGLE_CLIENT_ID no início do arquivo. Veja o README.");
+    return;
+  }
+  try {
+    await requestToken("consent");
+    localStorage.setItem("flashdeck-logged", "1");
+    await onLoggedIn();
+  } catch (e) {
+    toast("Login cancelado ou bloqueado.");
+  }
+}
+
+async function onLoggedIn() {
+  state.loggedIn = true;
+  setSync("syncing");
+  try {
+    await pullFromDrive();
+    setSync("synced");
+    toast("Conectado ao Google Drive");
+  } catch (e) {
+    console.error(e);
+    setSync("error");
+    toast("Erro ao sincronizar com o Drive.");
+  }
+  render();
+}
+
+function logout() {
+  if (accessToken) {
+    try { google.accounts.oauth2.revoke(accessToken, () => {}); } catch (e) {}
+  }
+  accessToken = null; driveFileId = null;
+  state.loggedIn = false;
+  localStorage.removeItem("flashdeck-logged");
+  setSync("local");
+  toast("Desconectado. Os dados continuam salvos neste dispositivo.");
+  render();
+}
+
+/* ============================================================
+   GOOGLE DRIVE (appDataFolder — pasta oculta exclusiva do app)
+   ============================================================ */
+async function driveFetch(url, opts = {}) {
+  const token = await getToken();
+  const resp = await fetch(url, {
+    ...opts,
+    headers: { Authorization: "Bearer " + token, ...(opts.headers || {}) },
+  });
+  if (resp.status === 401) throw new Error("unauthorized");
+  return resp;
+}
+
+async function findDriveFile() {
+  if (driveFileId) return driveFileId;
+  const q = encodeURIComponent("name='" + DRIVE_FILE + "'");
+  const resp = await driveFetch(
+    "https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&fields=files(id,name)&q=" + q
+  );
+  const json = await resp.json();
+  driveFileId = json.files && json.files[0] ? json.files[0].id : null;
+  return driveFileId;
+}
+
+async function pullFromDrive() {
+  const id = await findDriveFile();
+  if (!id) { await pushToDrive(); return; } // primeiro uso: sobe o local
+  const resp = await driveFetch(
+    "https://www.googleapis.com/drive/v3/files/" + id + "?alt=media"
+  );
+  const remote = await resp.json();
+  // Resolução simples: vence o mais recente (last-write-wins)
+  if ((remote.updatedAt || 0) > (state.data.updatedAt || 0)) {
+    state.data = remote;
+    saveLocal(state.data);
+  } else if ((state.data.updatedAt || 0) > (remote.updatedAt || 0)) {
+    await pushToDrive();
+  }
+}
+
+async function pushToDrive() {
+  const body = JSON.stringify(state.data);
+  const id = await findDriveFile();
+  if (id) {
+    await driveFetch(
+      "https://www.googleapis.com/upload/drive/v3/files/" + id + "?uploadType=media",
+      { method: "PATCH", headers: { "Content-Type": "application/json" }, body }
+    );
+  } else {
+    const boundary = "flashdeck" + Date.now();
+    const multipart =
+      "--" + boundary + "\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n" +
+      JSON.stringify({ name: DRIVE_FILE, parents: ["appDataFolder"] }) +
+      "\r\n--" + boundary + "\r\nContent-Type: application/json\r\n\r\n" +
+      body + "\r\n--" + boundary + "--";
+    const resp = await driveFetch(
+      "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id",
+      { method: "POST",
+        headers: { "Content-Type": "multipart/related; boundary=" + boundary },
+        body: multipart }
+    );
+    const json = await resp.json();
+    driveFileId = json.id;
+  }
+}
+
+function scheduleDriveSync() {
+  if (!state.loggedIn) return;
+  setSync("syncing");
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(async () => {
+    try { await pushToDrive(); setSync("synced"); }
+    catch (e) { console.error(e); setSync("error"); }
+  }, 1500);
+}
+
+function setSync(s) {
+  state.sync = s;
+  const el = document.getElementById("sync-indicator");
+  if (el) el.outerHTML = syncIndicatorHtml();
+}
+
+/* ============================================================
+   COMMIT central: toda mutação passa por aqui
+   ============================================================ */
+function commit(next) {
+  next.updatedAt = Date.now();
+  state.data = next;
+  saveLocal(next);
+  scheduleDriveSync();
+  render();
+}
+
+/* ============================================================
+   SM-2
+   ============================================================ */
+function scheduleCard(card, rating) {
+  let ease = card.ease || 2.5, interval = card.interval || 0, reps = card.reps || 0;
+  if (rating === 0) {
+    reps = 0; interval = 0; ease = Math.max(1.3, ease - 0.2);
+  } else if (rating === 1) {
+    interval = Math.max(1, Math.round(interval * 1.2)) || 1;
+    ease = Math.max(1.3, ease - 0.15); reps += 1;
+  } else if (rating === 2) {
+    if (reps === 0) interval = 1;
+    else if (reps === 1) interval = 6;
+    else interval = Math.round(interval * ease);
+    reps += 1;
+  } else {
+    if (reps === 0) interval = 4;
+    else interval = Math.round((interval || 1) * ease * 1.3);
+    ease += 0.15; reps += 1;
+  }
+  const due = interval === 0 ? Date.now() : Date.now() + interval * DAY;
+  return { ...card, ease, interval, reps, due, lastReview: Date.now() };
+}
+function previewInterval(card, rating) {
+  const s = scheduleCard(card, rating);
+  if (s.interval === 0) return "agora";
+  if (s.interval === 1) return "1 dia";
+  if (s.interval < 30) return s.interval + " dias";
+  if (s.interval < 365) return (s.interval / 30).toFixed(1) + " meses";
+  return (s.interval / 365).toFixed(1) + " anos";
+}
+const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+const isDue = (c) => !c.due || c.due <= Date.now();
+const esc = (s) => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;")
+  .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+
+/* ============================================================
+   AÇÕES
+   ============================================================ */
+function goHome(){ state.view={name:"home"}; state.showImport=false; state.editingId=null; render(); }
+function goDeck(id){ state.view={name:"deck",deckId:id}; state.showImport=false; state.editingId=null; render(); }
+
+function addDeck() {
+  const el = document.getElementById("new-deck");
+  const name = el.value.trim();
+  if (!name) return;
+  commit({ ...state.data, decks: [...state.data.decks, { id: uid(), name, createdAt: Date.now() }] });
+  toast('Baralho "' + name + '" criado');
+}
+
+function newCardObj(deckId, front, back) {
+  return { id: uid(), deckId, front, back, ease: 2.5, interval: 0, reps: 0, due: Date.now(), lastReview: null };
+}
+
+function addCard(deckId) {
+  const front = document.getElementById("card-front").value.trim();
+  const back = document.getElementById("card-back").value.trim();
+  if (!front || !back) return;
+  commit({ ...state.data, cards: [...state.data.cards, newCardObj(deckId, front, back)] });
+  toast("Card adicionado");
+}
+
+function startEdit(id){ state.editingId=id; render(); }
+function cancelEdit(){ state.editingId=null; render(); }
+function saveEdit(id) {
+  const front = document.getElementById("edit-front").value.trim();
+  const back = document.getElementById("edit-back").value.trim();
+  if (!front || !back) return;
+  state.editingId = null;
+  commit({ ...state.data, cards: state.data.cards.map(c => c.id===id ? {...c,front,back} : c) });
+}
+function deleteCard(id) {
+  commit({ ...state.data, cards: state.data.cards.filter(c => c.id !== id) });
+}
+function deleteDeck(id) {
+  const deck = state.data.decks.find(d => d.id === id);
+  const n = state.data.cards.filter(c => c.deckId === id).length;
+  if (!confirm('Excluir "' + deck.name + '" e todos os ' + n + ' cards?')) return;
+  state.view = { name: "home" };
+  commit({
+    decks: state.data.decks.filter(d => d.id !== id),
+    cards: state.data.cards.filter(c => c.deckId !== id),
+  });
+}
+function toggleImport(){ state.showImport=!state.showImport; render(); }
+
+function doImport(deckId) {
+  const txt = document.getElementById("import-json").value;
+  try {
+    const parsed = JSON.parse(txt);
+    const arr = Array.isArray(parsed) ? parsed : parsed.cards;
+    if (!Array.isArray(arr)) throw new Error();
+    const valid = arr.map(c => ({
+      front: (c.front || c.frente || "").trim(),
+      back: (c.back || c.verso || "").trim(),
+    })).filter(c => c.front && c.back);
+    if (!valid.length) throw new Error();
+    state.showImport = false;
+    commit({ ...state.data, cards: [...state.data.cards, ...valid.map(c => newCardObj(deckId, c.front, c.back))] });
+    toast(valid.length + " cards importados");
+  } catch {
+    toast('JSON inválido. Formato: [{"front":"…","back":"…"}]');
+  }
+}
+
+function doExport(deckId) {
+  const deck = state.data.decks.find(d => d.id === deckId);
+  const cards = state.data.cards.filter(c => c.deckId === deckId);
+  const payload = JSON.stringify({ deck: deck.name, exportedAt: new Date().toISOString(), cards }, null, 2);
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(payload)
+      .then(() => toast("Backup copiado para a área de transferência"))
+      .catch(() => toast("Não foi possível copiar"));
+  } else toast("Área de transferência indisponível neste navegador");
+}
+
+/* ---- Estudo ---- */
+function startStudy(deckId) {
+  const queue = state.data.cards.filter(c => c.deckId === deckId && isDue(c)).map(c => c.id);
+  state.study = { deckId, queue, done: 0, flipped: false };
+  state.view = { name: "study", deckId };
+  render();
+}
+function flip(){ state.study.flipped = true; render(); }
+function rate(rating) {
+  const st = state.study;
+  const card = state.data.cards.find(c => c.id === st.queue[0]);
+  const updated = scheduleCard(card, rating);
+  const rest = st.queue.slice(1);
+  st.queue = rating === 0 ? [...rest, card.id] : rest;
+  if (rating !== 0) st.done += 1;
+  st.flipped = false;
+  commit({ ...state.data, cards: state.data.cards.map(c => c.id === card.id ? updated : c) });
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function syncIndicatorHtml() {
+  const map = {
+    local:   ["local", "Salvo neste dispositivo"],
+    syncing: ["syncing", "Sincronizando…"],
+    synced:  ["synced", "Salvo no Drive"],
+    error:   ["error", "Erro de sincronização"],
+  };
+  const [cls, label] = map[state.sync];
+  return '<div id="sync-indicator" class="fd-sync ' + cls + '"><span class="dot"></span>' + label + "</div>";
+}
+
+function authButtonHtml() {
+  if (!state.loggedIn)
+    return '<button class="fd-btn ghost" onclick="login()">Entrar com Google</button>';
+  return '<button class="fd-mini" onclick="logout()">Sair da conta Google</button>';
+}
+
+function renderHome() {
+  const d = state.data;
+  const totalDue = d.cards.filter(isDue).length;
+  let html = '<div class="fd-header"><h1>FlashDeck</h1>' + syncIndicatorHtml() + "</div>";
+
+  if (!isConfigured()) {
+    html += '<div class="fd-banner">⚠️ Login Google ainda não configurado: edite <code>GOOGLE_CLIENT_ID</code> no início do <code>index.html</code> (passo a passo no README). Enquanto isso, os dados ficam salvos só neste dispositivo.</div>';
+  }
+
+  html += '<div style="margin-bottom:14px">' + authButtonHtml() + "</div>";
+
+  if (!d.decks.length)
+    html += '<div class="fd-empty">Nenhum baralho ainda. Crie o primeiro abaixo — ou peça cards ao Claude, copie o JSON e importe dentro do baralho.</div>';
+
+  for (const deck of d.decks) {
+    const cards = d.cards.filter(c => c.deckId === deck.id);
+    const due = cards.filter(isDue).length;
+    const news = cards.filter(c => (c.reps||0) === 0 && !c.lastReview).length;
+    html +=
+      '<div class="fd-deck-row" onclick="goDeck(\'' + deck.id + '\')"><div>' +
+      '<div class="fd-deck-name">' + esc(deck.name) + "</div>" +
+      '<div class="fd-counts" style="margin-top:4px">' +
+      '<span class="fd-count-due">' + due + " p/ revisar</span>" +
+      '<span class="fd-count-new">' + news + " novos</span>" +
+      '<span class="fd-count-total">' + cards.length + " total</span>" +
+      '</div></div><span class="fd-display" style="color:var(--muted)">›</span></div>';
+  }
+
+  html +=
+    '<div class="fd-card" style="margin-top:16px">' +
+    '<label class="fd-label" style="margin-top:0">Novo baralho</label>' +
+    '<div style="display:flex;gap:8px">' +
+    '<input class="fd-input" id="new-deck" placeholder="Ex.: EF Core, Anatomia, Inglês…" onkeydown="if(event.key===\'Enter\')addDeck()">' +
+    '<button class="fd-btn" onclick="addDeck()">Criar</button></div></div>';
+
+  html += '<p class="fd-hint" style="margin-top:16px;text-align:center">' + totalDue + " cards pendentes hoje no total</p>";
+  return html;
+}
+
+function renderDeck() {
+  const deckId = state.view.deckId;
+  const deck = state.data.decks.find(d => d.id === deckId);
+  if (!deck) return renderHome();
+  const cards = state.data.cards.filter(c => c.deckId === deckId);
+  const due = cards.filter(isDue).length;
+
+  let html =
+    '<div class="fd-header"><button class="fd-back" onclick="goHome()">‹ Baralhos</button>' +
+    "<h1>" + esc(deck.name) + "</h1>" + syncIndicatorHtml() + "</div>";
+
+  html += '<button class="fd-btn full" ' + (due ? "" : "disabled") +
+    ' onclick="startStudy(\'' + deckId + '\')">' +
+    (due ? "Estudar " + due + " cards" : "Nada pendente hoje 🎉") + "</button>";
+
+  html +=
+    '<div class="fd-card" style="margin-top:16px">' +
+    '<label class="fd-label" style="margin-top:0">Frente</label>' +
+    '<textarea class="fd-textarea" id="card-front" placeholder="Pergunta ou conceito"></textarea>' +
+    '<label class="fd-label">Verso</label>' +
+    '<textarea class="fd-textarea" id="card-back" placeholder="Resposta"></textarea>' +
+    '<div class="fd-row-btns">' +
+    '<button class="fd-btn" onclick="addCard(\'' + deckId + '\')">Adicionar card</button>' +
+    '<button class="fd-btn ghost" onclick="toggleImport()">Importar JSON</button>' +
+    '<button class="fd-btn ghost" onclick="doExport(\'' + deckId + '\')">Exportar</button>' +
+    '<button class="fd-btn danger" onclick="deleteDeck(\'' + deckId + '\')">Excluir baralho</button>' +
+    "</div></div>";
+
+  if (state.showImport) {
+    html +=
+      '<div class="fd-card" style="margin-top:12px">' +
+      '<label class="fd-label" style="margin-top:0">Cole o JSON gerado pelo Claude</label>' +
+      '<div class="fd-code">[{"front":"O que é change detection?","back":"Mecanismo do Angular que…"}]</div>' +
+      '<textarea class="fd-textarea" id="import-json" style="margin-top:10px;min-height:120px" placeholder="Cole aqui…"></textarea>' +
+      '<div class="fd-row-btns"><button class="fd-btn" onclick="doImport(\'' + deckId + '\')">Importar</button></div>' +
+      '<p class="fd-hint">Peça em qualquer conversa: "Claude, gere 20 flashcards sobre X em JSON com campos front e back" — e cole aqui.</p></div>';
+  }
+
+  html += '<div class="fd-card" style="margin-top:16px"><label class="fd-label" style="margin-top:0">Cards (' + cards.length + ")</label>";
+  if (!cards.length) html += '<div class="fd-empty">Nenhum card ainda.</div>';
+
+  for (const c of cards) {
+    if (state.editingId === c.id) {
+      html +=
+        '<div style="padding:12px 0">' +
+        '<textarea class="fd-textarea" id="edit-front">' + esc(c.front) + "</textarea>" +
+        '<textarea class="fd-textarea" id="edit-back" style="margin-top:8px">' + esc(c.back) + "</textarea>" +
+        '<div class="fd-row-btns">' +
+        '<button class="fd-btn" onclick="saveEdit(\'' + c.id + '\')">Salvar</button>' +
+        '<button class="fd-btn ghost" onclick="cancelEdit()">Cancelar</button></div></div>';
+    } else {
+      const status = isDue(c) ? "pendente"
+        : "próx. em " + Math.max(1, Math.round((c.due - Date.now()) / DAY)) + "d";
+      html +=
+        '<div class="fd-item"><div style="flex:1">' +
+        '<div class="fd-item-front">' + esc(c.front) + "</div>" +
+        '<div class="fd-item-back">' + esc(c.back) + "</div>" +
+        '<div class="fd-item-back fd-display">' + status + " · ease " + (c.ease||2.5).toFixed(2) + "</div></div>" +
+        '<div style="display:flex">' +
+        '<button class="fd-mini" onclick="startEdit(\'' + c.id + '\')">Editar</button>' +
+        '<button class="fd-mini del" onclick="deleteCard(\'' + c.id + '\')">Excluir</button></div></div>';
+    }
+  }
+  html += "</div>";
+  return html;
+}
+
+function renderStudy() {
+  const st = state.study;
+  const deckId = st.deckId;
+  const card = state.data.cards.find(c => c.id === st.queue[0]);
+  const total = st.queue.length + st.done;
+
+  if (!card) {
+    return (
+      '<div class="fd-header"><button class="fd-back" onclick="goDeck(\'' + deckId + '\')">‹ Voltar</button>' +
+      "<h1>Sessão concluída</h1></div>" +
+      '<div class="fd-empty">🎉 Você revisou ' + st.done + " cards. Volte amanhã para as próximas revisões.</div>" +
+      '<button class="fd-btn full" onclick="goDeck(\'' + deckId + '\')">Voltar ao baralho</button>'
+    );
+  }
+
+  let html =
+    '<div class="fd-header"><button class="fd-back" onclick="goDeck(\'' + deckId + '\')">‹ Sair</button>' +
+    syncIndicatorHtml() + "</div>" +
+    '<div class="fd-progress">' + (st.done + 1) + " / " + total + "</div>";
+
+  html += '<div class="fd-study-card" onclick="' + (st.flipped ? "" : "flip()") + '">' +
+    '<div class="fd-study-text">' + esc(card.front) + "</div>";
+  if (st.flipped)
+    html += '<div class="fd-divider"></div><div class="fd-study-answer">' + esc(card.back) + "</div>";
+  else
+    html += '<div class="fd-hint">Toque para revelar a resposta</div>';
+  html += "</div>";
+
+  if (st.flipped) {
+    const ratings = [
+      [0, "De novo", "var(--again)"], [1, "Difícil", "var(--hard)"],
+      [2, "Bom", "var(--good)"], [3, "Fácil", "var(--easy)"],
+    ];
+    html += '<div class="fd-ratings">';
+    for (const [r, label, color] of ratings) {
+      html += '<button class="fd-rating" style="background:' + color + '" onclick="rate(' + r + ')">' +
+        "<b>" + label + "</b><span>" + previewInterval(card, r) + "</span></button>";
+    }
+    html += "</div>";
+  }
+  return html;
+}
+
+function render() {
+  const app = document.getElementById("app");
+  if (state.view.name === "home") app.innerHTML = renderHome();
+  else if (state.view.name === "deck") app.innerHTML = renderDeck();
+  else if (state.view.name === "study") app.innerHTML = renderStudy();
+}
+
+function toast(msg) {
+  const slot = document.getElementById("toast-slot");
+  slot.innerHTML = '<div class="fd-toast">' + esc(msg) + "</div>";
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => (slot.innerHTML = ""), 2500);
+}
+
+/* ============================================================
+   BOOT
+   ============================================================ */
+state.data = loadLocal();
+render();
+</script>
+<script src="https://accounts.google.com/gsi/client" async defer onload="gisLoaded()"></script>
+</body>
+</html>
