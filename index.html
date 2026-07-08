@@ -162,6 +162,9 @@ function requestToken(prompt) {
     if (!tokenClient) return reject(new Error("GIS não carregou"));
     tokenClient.callback = (resp) => {
       if (resp.error) return reject(resp);
+      if (!google.accounts.oauth2.hasGrantedAllScopes(resp, DRIVE_SCOPE)) {
+        return reject(new Error("noscope"));
+      }
       accessToken = resp.access_token;
       tokenExpiry = Date.now() + (resp.expires_in - 60) * 1000;
       resolve(accessToken);
@@ -187,7 +190,9 @@ async function login() {
     localStorage.setItem("flashdeck-scopev", SCOPE_VERSION);
     await onLoggedIn();
   } catch (e) {
-    toast("Login cancelado ou bloqueado.");
+    if (e && e.message === "noscope")
+      toast("Você precisa MARCAR a caixinha de acesso ao Google Drive na tela de permissão. Tente de novo.");
+    else toast("Login cancelado ou bloqueado.");
   }
 }
 
