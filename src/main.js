@@ -60,6 +60,11 @@ applyTheme();
 watchSystemTheme();
 initRouter();
 session.initKeyboard();
+// Reforço: se o script do Google já tiver carregado antes deste módulo
+// (ordem entre <script type="module"> e <script async> não é garantida),
+// o onload dele já disparou e não vai disparar de novo. Chamamos aqui
+// também; gisLoaded() é idempotente.
+gisLoaded();
 if (!location.hash) {
   const skip = localStorage.getItem("flashdeck-skiplogin") === "1";
   const logged = localStorage.getItem("flashdeck-logged") === "1";
