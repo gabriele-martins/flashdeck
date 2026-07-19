@@ -10,11 +10,22 @@ let accessToken = null, tokenExpiry = 0, tokenClient = null;
 let renderRef = () => {};
 export function setAuthRender(fn) { renderRef = fn; }
 
-export function gisLoaded() {
-  if (!isConfigured() || typeof google === "undefined") return;
+// Inicialização preguiçosa: o script do Google (async) e este módulo
+// carregam sem ordem garantida entre si. Em vez de depender só do
+// callback onload="gisLoaded()", criamos o tokenClient também na hora
+// do clique em Entrar, se ainda não existir. Idempotente.
+function ensureTokenClient() {
+  if (tokenClient) return true;
+  if (typeof google === "undefined" || !google.accounts || !google.accounts.oauth2) return false;
   tokenClient = google.accounts.oauth2.initTokenClient({
     client_id: GOOGLE_CLIENT_ID, scope: DRIVE_SCOPE, callback: () => {},
   });
+  return true;
+}
+
+export function gisLoaded() {
+  if (!isConfigured()) return;
+  if (!ensureTokenClient()) return;
   if (localStorage.getItem("flashdeck-logged") === "1" &&
       localStorage.getItem("flashdeck-scopev") === SCOPE_VERSION) {
     requestToken("").then(onLoggedIn).catch(() => {});
@@ -23,7 +34,8 @@ export function gisLoaded() {
 
 function requestToken(prompt) {
   return new Promise((resolve, reject) => {
-    if (!tokenClient) return reject(new Error("GIS não carregou"));
+    if (!ensureTokenClient())
+      return reject(new Error("GIS ainda carregando. Aguarde um instante e tente de novo."));
     tokenClient.callback = (resp) => {
       if (resp.error) return reject(resp);
       if (!google.accounts.oauth2.hasGrantedAllScopes(resp, DRIVE_SCOPE))
@@ -52,6 +64,8 @@ export async function login() {
   } catch (e) {
     if (e && e.message === "noscope")
       toast("Marque a caixa de acesso ao Google Drive na tela de permissão e tente de novo.");
+    else if (e && /ainda carregando/.test(e.message || ""))
+      toast(e.message);
     else toast("Login cancelado ou bloqueado.");
   }
 }
