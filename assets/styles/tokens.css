@@ -1,0 +1,25 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
+:root{
+  --bg:#EEF1F6; --surface:#FFFFFF; --ink:#12141F; --muted:#6B7285;
+  --line:#DDE2EC; --accent:#4338CA; --accent-soft:#EEF0FF; --accent-ink:#4338CA;
+  --again:#DC2626; --hard:#D97706; --good:#16A34A; --easy:#2563EB;
+  --chip-new:#EFF6FF; --chip-new-ink:#2563EB;
+  --chip-learn:#FEF3C7; --chip-learn-ink:#B45309;
+  --chip-mature:#DCFCE7; --chip-mature-ink:#15803D;
+  --chip-susp:#F3F4F6; --chip-susp-ink:#6B7285;
+  --danger-soft:#FEE2E2;
+  --heat0:#E5E9F2; --heat1:#C7D2FE; --heat2:#A5B4FC; --heat3:#818CF8; --heat4:#4F46E5;
+  --shadow:0 1px 3px rgba(18,20,31,.06);
+}
+html[data-theme='dark']{
+  --bg:#0F1219; --surface:#181D29; --ink:#E8EAF2; --muted:#8B93A7;
+  --line:#2A3145; --accent:#818CF8; --accent-soft:#252B45; --accent-ink:#A5B4FC;
+  --again:#F87171; --hard:#FBBF24; --good:#4ADE80; --easy:#60A5FA;
+  --chip-new:#1E2A47; --chip-new-ink:#93C5FD;
+  --chip-learn:#3A2E15; --chip-learn-ink:#FCD34D;
+  --chip-mature:#14331F; --chip-mature-ink:#86EFAC;
+  --chip-susp:#232838; --chip-susp-ink:#8B93A7;
+  --danger-soft:#3B2024;
+  --heat0:#232838; --heat1:#2E3A6E; --heat2:#3D4E9E; --heat3:#5B6ED4; --heat4:#818CF8;
+  --shadow:0 1px 3px rgba(0,0,0,.35);
+}

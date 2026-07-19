@@ -1,68 +1,76 @@
-# FlashDeck — Fase 2 (GitHub Pages + Google Drive)
+# FlashDeck
 
-App de repetição espaçada (estilo Anki) em um único arquivo `index.html`. Sem servidor, sem build, sem backend. Os dados ficam salvos no `localStorage` do dispositivo e, com login Google, sincronizam no seu Google Drive (pasta oculta `appDataFolder`, que só este app enxerga — não aparece no meio dos seus arquivos).
+App de repetição espaçada (estilo Anki) que roda como site estático no GitHub Pages, com sincronização opcional no Google Drive. Sem servidor, sem etapa de build: os arquivos são módulos ES nativos, carregados direto pelo navegador.
 
-## 1. Publicar no GitHub Pages (5 minutos)
+**App online:** https://gabriele-martins.github.io/flashdeck/
 
-1. Crie um repositório no GitHub (ex.: `flashdeck`). Pode ser público ou privado (Pages em repositório privado exige plano pago; público é grátis).
-2. Suba o `index.html` e este `README.md` para a raiz do repositório.
-3. No repositório: **Settings → Pages → Source: Deploy from a branch → Branch: main / (root) → Save**.
-4. Em 1-2 minutos o app estará em `https://SEU_USUARIO.github.io/flashdeck/`.
+## Recursos
 
-O app já funciona nesse ponto, salvando localmente no dispositivo. O login Google precisa do passo 2.
+- Decks e cards com CRUD completo, tags e busca
+- Repetição espaçada (SM-2) com previsão de intervalos
+- Estudo por um deck, vários ou todos; modo Cram; limite de tempo por sessão
+- Swipe no mobile e atalhos de teclado no desktop
+- Suspender, resetar e detecção automática de cards problemáticos (leech)
+- Estatísticas: streak, heatmap de atividade, retenção e previsão
+- Tema claro/escuro/sistema
+- Importação por JSON (lista de cards, deck completo, vários decks ou backup) e via arquivos no Drive
+- PWA instalável, com cache offline
 
-## 2. Criar o Client ID do Google (10 minutos, uma vez só)
+## Estrutura
 
-1. Acesse https://console.cloud.google.com e crie um projeto (ex.: "FlashDeck").
-2. Menu **APIs e serviços → Biblioteca** → procure **Google Drive API** → **Ativar**.
-3. Menu **APIs e serviços → Tela de permissão OAuth**:
-   - Tipo de usuário: **Externo** → Criar.
-   - Preencha nome do app ("FlashDeck") e seu e-mail. Salve.
-   - Em **Público-alvo/Usuários de teste**, adicione o seu próprio Gmail (em modo "Teste", só os e-mails listados conseguem logar — para uso pessoal isso basta e você não precisa publicar o app para verificação do Google).
-4. Menu **APIs e serviços → Credenciais → Criar credenciais → ID do cliente OAuth**:
-   - Tipo: **Aplicativo da Web**.
-   - **Origens JavaScript autorizadas**: adicione
-     - `https://SEU_USUARIO.github.io`
-     - `http://localhost:8000` (opcional, para testar local)
-   - Não precisa de URI de redirecionamento (o app usa token flow, sem redirect).
-5. Copie o **Client ID** gerado (termina em `.apps.googleusercontent.com`).
-
-## 3. Configurar o app
-
-No `index.html`, logo no início do `<script>`, troque:
-
-```js
-const GOOGLE_CLIENT_ID = "COLE_SEU_CLIENT_ID_AQUI.apps.googleusercontent.com";
+```
+index.html                 shell + carregamento dos módulos
+manifest.webmanifest       metadados PWA
+service-worker.js          cache offline
+assets/
+  styles/tokens.css        variáveis de tema (cores, claro/escuro)
+  styles/app.css           estilos dos componentes
+  icons/                   ícones do app
+src/
+  config.js                constantes (Client ID, escopos, chaves)
+  main.js                  boot, roteador e namespace global FD
+  core/                    lógica pura (sem DOM)
+    state.js               estado central + commit
+    storage.js             localStorage + migração
+    srs.js                 algoritmo SM-2
+    stats.js               cálculos de estatística
+    importer.js            interpretação dos formatos de importação
+  platform/                dependências externas isoláveis
+    auth.js                login Google (GIS)
+    drive.js               sincronização com o Drive
+  ui/
+    router.js              navegação por hash
+    components.js          topbar, drawer, modal, toast
+    theme.js               aplicação de tema
+    actions.js             handlers de CRUD e import/export
+    session.js             sessão de estudo (fila, swipe, teclado, timer)
+    screens/               uma tela por arquivo
+tests/
+  flow.test.js             suíte funcional (jsdom)
 ```
 
-pelo seu Client ID. Suba a alteração no GitHub. Pronto.
+O diretório `platform/` isola tudo que dependeria de mudança num wrapper mobile nativo (auth e Drive). Para trocar o backend de sincronização, altera-se apenas `platform/drive.js`.
 
-> O Client ID não é segredo — ele é público por definição no fluxo OAuth de apps client-side. A segurança vem das "Origens JavaScript autorizadas": só o seu domínio do GitHub Pages consegue usá-lo.
+## Configuração do Google (para sincronização)
 
-## 4. Como funciona a sincronização
+1. Google Cloud Console: crie um projeto e ative a **Google Drive API**.
+2. Tela de permissão OAuth: tipo Externo; adicione seu e-mail como usuário de teste.
+3. Credenciais → ID do cliente OAuth → Aplicativo da Web. Em origens JavaScript autorizadas, adicione `https://SEU_USUARIO.github.io`.
+4. Cole o Client ID em `src/config.js` (`GOOGLE_CLIENT_ID`). Ele é público por natureza; a segurança vem das origens autorizadas.
 
-- Toda alteração salva imediatamente no `localStorage` (funciona offline).
-- Logada, cada alteração é enviada ao Drive ~1,5s depois (debounce), no arquivo `flashdeck-data.json` dentro do `appDataFolder`.
-- Ao logar em outro dispositivo, o app compara `updatedAt` local vs. Drive e carrega o mais recente (last-write-wins). Evite editar em dois dispositivos offline ao mesmo tempo.
-- O indicador no topo mostra o estado: **Salvo neste dispositivo / Sincronizando / Salvo no Drive / Erro**.
+Sem essa configuração, o app funciona salvando apenas no dispositivo.
 
-## 5. Adicionando cards via Claude (sem MCP)
+## Desenvolvimento
 
-Em qualquer conversa com o Claude:
+Por usar módulos ES, precisa ser servido por HTTP (não abra via `file://`):
 
-> "Gere 20 flashcards sobre change detection no Angular, em JSON, array de objetos com campos `front` e `back`, sem markdown."
-
-Copie o JSON, abra o baralho → **Importar JSON** → cole → Importar.
-
-## 6. Testar localmente (opcional)
-
-```bash
+```
 python3 -m http.server 8000
-# abra http://localhost:8000
+# http://localhost:8000
 ```
 
-(Abrir o arquivo direto com `file://` não funciona para o login Google — precisa de `http://`.)
+Testes: `node tests/flow.test.js` (requer `jsdom`).
 
-## 7. Futuro app wrapper
+## Deploy
 
-O app é um site estático responsivo: um WebView (MAUI, Capacitor, React Native WebView) apontando para a URL do GitHub Pages já funciona. Toda a persistência está isolada nas funções `loadLocal/saveLocal` e `pullFromDrive/pushToDrive` — se um dia quiser trocar o backend, é só mexer nelas.
+Qualquer push na branch `main` é publicado pelo GitHub Pages automaticamente.
